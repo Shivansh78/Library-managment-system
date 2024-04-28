@@ -153,13 +153,39 @@ def make_book_request(username, book_name, assign_date, return_date):
     conn.commit()
     conn.close()
 
-def fetch_user_books(username):
+# def fetch_user_books(username):
+#     conn = connect_db()
+#     cursor = conn.cursor()
+#     cursor.execute(f"SELECT * FROM {username}_books")
+#     user_books_data = cursor.fetchall()
+#     conn.close()
+#     return user_books_data
+
+def fetch_user_books():
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {username}_books")
+    cursor.execute("""
+        SELECT users.username, user_books.book_name, user_books.author, user_books.genre
+        FROM users
+        LEFT JOIN user_books ON users.username = user_books.username
+    """)
     user_books_data = cursor.fetchall()
     conn.close()
     return user_books_data
+
+
+def user_register(username, password):
+    conn = connect_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO users (student_name, password) VALUES (%s, %s)", (username, password))
+        conn.commit()
+        st.success("Registration successful!")
+    except mysql.connector.Error as err:
+        st.error(f"Error during registration: {err}")
+    finally:
+        if conn:
+            conn.close()
 
 def main():
     st.title("Library")
@@ -168,7 +194,7 @@ def main():
     create_book_requests_table()
     create_users_table()
 
-    selection = st.sidebar.radio("Navigation", ["User", "Admin"])
+    selection = st.sidebar.radio("Navigation", ["User", "Admin", "Register"])
 
     if selection == "Admin":
         st.header("Admin Panel")
@@ -233,6 +259,15 @@ def main():
             st.dataframe(df)
         else:
             st.write("No books assigned to this user.")
+
+    elif selection == "Register":
+        st.header("User Registration")
+        new_username = st.text_input("New Username")
+        new_password = st.text_input("New Password", type="password")
+
+        if st.button("Register"):
+            user_register(new_username, new_password)
+
 
 if __name__ == "__main__":
     main()
