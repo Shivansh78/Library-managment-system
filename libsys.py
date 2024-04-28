@@ -4,10 +4,11 @@ import pandas as pd
 
 def connect_db():
     conn = mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='1234',
-        database='ninad1'
+        #host='172.31.13.203',
+        host='127.0.0.1',
+        user='new_user',
+        password='password',
+        database='new_database'
     )
     return conn
 
@@ -45,6 +46,15 @@ def fetch_books():
     books_data = cursor.fetchall()
     conn.close()
     return books_data
+
+# def fetch_books():
+#     conn = connect_db()
+#     cursor = conn.cursor()
+#     cursor.execute("SELECT * FROM books")
+#     books_data = cursor.fetchall()
+#     conn.close()
+#     return books_data if books_data else []
+
 
 def user_login(username, password):
     conn = connect_db()
@@ -87,7 +97,7 @@ def create_book_requests_table():
     conn.commit()
     conn.close()
 
-def assign_book(username, book_name,assign_date,return_date):
+def assign_book_original(username, book_name,assign_date,return_date):
     conn = connect_db()
     cursor = conn.cursor()
 
@@ -111,6 +121,77 @@ def assign_book(username, book_name,assign_date,return_date):
         
     conn.commit()
     conn.close()
+
+# def assign_book(username, book_name, assign_date, return_date):
+#     try:
+#         conn = connect_db()
+#         cursor = conn.cursor()
+
+#         # Update book quantity
+#         cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
+
+#         # Get book data
+#         cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
+#         book_data = cursor.fetchone()
+
+#         # Assign book to user
+#         cursor.execute("""
+#             INSERT INTO user_books (username, book_name, author, genre, assign_date, return_date)
+#             VALUES (%s, %s, %s, %s, %s, %s)
+#             """, (username, book_name, book_data[0], book_data[1], assign_date, return_date))
+
+
+#         # Remove book request
+#         cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
+
+#         conn.commit()
+#         st.success("Book assigned successfully!")
+
+#     except Exception as e:
+#         conn.rollback()
+#         st.error(f"Failed to assign book: {e}")
+
+#     finally:
+#         if conn:
+#             conn.close()
+
+# def assign_book(username, book_name, assign_date, return_date):
+#     try:
+#         conn = connect_db()
+#         cursor = conn.cursor()
+
+#         # Update book quantity
+#         cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
+
+#         # Get book data
+#         cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
+#         book_data = cursor.fetchone()
+
+#         if book_data is None:
+#             st.error(f"Book '{book_name}' not found.")
+#             return
+
+#         st.write(f"Book Data: {book_data}")
+
+#         # Assign book to user
+#         cursor.execute("""
+#             INSERT INTO user_books (username, book_name, author, genre, assign_date, return_date)
+#             VALUES (%s, %s, %s, %s, %s, %s)
+#             """, (username, book_name, book_data[0], book_data[1], assign_date, return_date))
+
+#         # Remove book request
+#         cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
+
+#         conn.commit()
+#         st.success("Book assigned successfully!")
+
+#     except Exception as e:
+#         conn.rollback()
+#         st.error(f"Failed to assign book: {e}")
+
+#     finally:
+#         if conn:
+#             conn.close()
 
 
 
@@ -180,7 +261,45 @@ def main():
         password = st.text_input("Password", type="password")
 
         if st.button("Login"):
-            if user_login(username, password):
+            if user_log
+def assign_book(username, book_name, assign_date, return_date):
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Update book quantity
+        cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
+
+        # Get book data
+        cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
+        book_data = cursor.fetchone()
+
+        if book_data is None:
+            st.error(f"Book '{book_name}' not found.")
+            return
+
+        st.write(f"Book Data: {book_data}")
+
+        # Assign book to user
+        cursor.execute("""
+            INSERT INTO user_books (username, book_name, author, genre, assign_date, return_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (username, book_name, book_data[0], book_data[1], assign_date, return_date))
+
+        # Remove book request
+        cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
+
+        conn.commit()
+        st.success("Book assigned successfully!")
+
+    except Exception as e:
+        conn.rollback()
+        st.error(f"Failed to assign book: {e}")
+
+    finally:
+        if conn:
+            conn.close()
+in(username, password):
                 st.success("Login successful!")
 
                 
@@ -215,3 +334,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
