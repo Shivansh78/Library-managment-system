@@ -12,7 +12,6 @@ def connect_db():
     return conn
 
 def create_books_table():
-
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("""
@@ -22,19 +21,18 @@ def create_books_table():
             Author VARCHAR(255),
             Genre VARCHAR(10),
             Quantity INT
-            
         );
     """)
     conn.commit()
     conn.close()
 
-def insert_books(Name,Author,Genre,Quantity):
+def insert_books(Name, Author, Genre, Quantity):
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO books (Name,Author,Genre,Quantity)
+        INSERT INTO books (Name, Author, Genre, Quantity)
         VALUES (%s, %s, %s, %s);
-    """, (Name,Author,Genre,Quantity))
+    """, (Name, Author, Genre, Quantity))
     conn.commit()
     conn.close()
 
@@ -46,14 +44,27 @@ def fetch_books():
     conn.close()
     return books_data
 
+def create_users_table():
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            clg_id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL
+        );
+    """)
+    conn.commit()
+    conn.close()
 
 def user_login(username, password):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT clg_id FROM users WHERE student_name = %s", (username,))
+    cursor.execute("SELECT password FROM users WHERE student_name = %s", (username,))
     result = cursor.fetchone()
     conn.close()
     if result:
+        # In a real application, you would compare hashed passwords here
         return result[0] == password
     return False
 
@@ -78,41 +89,51 @@ def create_book_requests_table():
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS book_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255),
-        book_name VARCHAR(255),
-        assign_date DATE,
-        return_date DATE
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255),
+            book_name VARCHAR(255),
+            assign_date DATE,
+            return_date DATE
         );
-        """)
+    """)
     conn.commit()
     conn.close()
 
-def assign_book_original(username, book_name,assign_date,return_date):
-    conn = connect_db()
-    cursor = conn.cursor()
+def assign_book(username, book_name, assign_date, return_date):
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
 
-    
-    cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
+        # Update book quantity
+        cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
 
-   
-    cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
-    book_data = cursor.fetchone()
+        # Get book data
+        cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
+        book_data = cursor.fetchone()
 
-    
-    cursor.execute(f"""
-        INSERT INTO {username}_books (book_name, author, genre, assign_date, return_date)
-        VALUES (%s, %s, %s, %s, %s)
-        """, (book_name, book_data[0], book_data[1],assign_date,return_date))
-    
-    st.success("Book assigned successfully!")
+        if book_data is None:
+            st.error(f"Book '{book_name}' not found.")
+            return
 
-    
-    cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
-        
-    conn.commit()
-    conn.close()
+        # Assign book to user
+        cursor.execute("""
+            INSERT INTO user_books (username, book_name, author, genre, assign_date, return_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (username, book_name, book_data[0], book_data[1], assign_date, return_date))
 
+        # Remove book request
+        cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
+
+        conn.commit()
+        st.success("Book assigned successfully!")
+
+    except Exception as e:
+        conn.rollback()
+        st.error(f"Failed to assign book: {e}")
+
+    finally:
+        if conn:
+            conn.close()
 
 def display_book_requests():
     conn = connect_db()
@@ -145,13 +166,14 @@ def main():
 
     create_books_table()
     create_book_requests_table()
+    create_users_table()
 
     selection = st.sidebar.radio("Navigation", ["User", "Admin"])
 
     if selection == "Admin":
         st.header("Admin Panel")
         password = st.text_input("Enter Admin Password", type="password")
-        
+
         if password == "admin1234":
 
             st.header("Add Books")
@@ -162,7 +184,7 @@ def main():
             Quantity = st.number_input("Quantity", min_value=0)
 
             if st.button("Submit"):
-                insert_books(Name,Author,Genre,Quantity)
+                insert_books(Name, Author, Genre, Quantity)
                 st.success("User details submitted successfully!")
 
         st.header("Book Requests")
@@ -170,59 +192,20 @@ def main():
         for request in requests_data:
             st.write(f"Request ID: {request[0]}, Username: {request[1]}, Book Name: {request[2]}, Assign Date: {request[3]}, Return Date: {request[4]}")
             if st.button(f"Assign Book {request[0]}"):
-                assign_book(request[1], request[2],request[3],request[4])
+                assign_book(request[1], request[2], request[3], request[4])
                 st.success("Book assigned successfully!")
 
-    
+
     elif selection == "User":
         st.header("User Login")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
 
         if st.button("Login"):
-            if user_log
-def assign_book(username, book_name, assign_date, return_date):
-    try:
-        conn = connect_db()
-        cursor = conn.cursor()
-
-        # Update book quantity
-        cursor.execute("UPDATE books SET Quantity = Quantity - 1 WHERE Name = %s", (book_name,))
-
-        # Get book data
-        cursor.execute("SELECT author, genre FROM books WHERE Name = %s", (book_name,))
-        book_data = cursor.fetchone()
-
-        if book_data is None:
-            st.error(f"Book '{book_name}' not found.")
-            return
-
-        st.write(f"Book Data: {book_data}")
-
-        # Assign book to user
-        cursor.execute("""
-            INSERT INTO user_books (username, book_name, author, genre, assign_date, return_date)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """, (username, book_name, book_data[0], book_data[1], assign_date, return_date))
-
-        # Remove book request
-        cursor.execute("DELETE FROM book_requests WHERE book_name = %s", (book_name,))
-
-        conn.commit()
-        st.success("Book assigned successfully!")
-
-    except Exception as e:
-        conn.rollback()
-        st.error(f"Failed to assign book: {e}")
-
-    finally:
-        if conn:
-            conn.close()
-in(username, password):
+            if user_login(username, password):
                 st.success("Login successful!")
 
-                
-        create_user_books_table(username)
+        create_user_books_table(username)  # This line creates the user's books table
 
         st.header("Books List")
         books_data = fetch_books()
@@ -233,7 +216,7 @@ in(username, password):
             st.write("No books available.")
 
         st.header("Make Book Assignment Request")
-    
+
         book_name = st.text_input("Book Name")
         assign_date = st.date_input("Assign Date")
         return_date = st.date_input("Return Date")
